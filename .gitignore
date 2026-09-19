@@ -485,3 +485,5 @@ $RECYCLE.BIN/
 InterviewCoach.Mcp.MarkItDown/
 .azure
 src/InterviewCoach.AppHost/appsettings.Development.json
+apphost.cs
+apphost.settings.json

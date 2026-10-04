@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Data.Common;
 
 using Azure.Identity;
+using Azure;
 
 using GitHub.Copilot;
 
@@ -98,28 +99,11 @@ if (llmProvider == LlmProvider.MicrosoftFoundry)
     var uri = new Uri(cogServicesEndpoint);
     var host = uri.Host.Split('.')[0];
     var model = connection.TryGetValue("Deployment", out var modelValue) ? modelValue?.ToString() : throw new InvalidOperationException("Missing Foundry Model");
-
-    var credentialOptions = new DefaultAzureCredentialOptions();
-    if (config["AZURE_TENANT_ID"] is { } tenantId)
-    {
-        credentialOptions.TenantId = tenantId;
-    }
-    if (builder.Environment.IsDevelopment())
-    {
-        // Locally there is no Managed Identity, so the IMDS probe fails with an
-        // "unreachable network" error (169.254.169.254) that aborts the credential
-        // chain before it reaches the Azure CLI credential. Exclude it during local
-        // development so `az login` is used; it stays enabled when deployed to Azure.
-        credentialOptions.ExcludeManagedIdentityCredential = true;
-    }
-
-    BearerTokenPolicy tokenPolicy = new(
-        new DefaultAzureCredential(credentialOptions),
-        "https://cognitiveservices.azure.com/.default");
+    var apiKey = config["MicrosoftFoundry:Project:ApiKey"] ?? throw new InvalidOperationException("Missing API Key");
 
 #pragma warning disable OPENAI001
     ChatClient client = new(
-        authenticationPolicy: tokenPolicy,
+        credential: new AzureKeyCredential(apiKey),
         model: model,
         options: new OpenAIClientOptions()
         {
